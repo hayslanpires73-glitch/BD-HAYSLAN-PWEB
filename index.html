@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="estilo.css">
+
+<title>PÁGINA DE LOGIN</title>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+
+<form id="formLogin">
+
+<fieldset id="fie">
+
+<legend>LOGIN</legend>
+
+<p>
+<label>Login (Email): </label>
+
+<input type="email"
+id="loginEmail"
+required>
+</p>
+
+<p>
+<label>SENHA :</label>
+
+<input type="password"
+id="loginSenha"
+required>
+</p>
+
+<center>
+
+<button type="submit">
+FAZER LOGIN
+</button>
+
+</center>
+
+</fieldset>
+
+</form>
+
+<!-- CADASTRO -->
+
+<form id="formCadastro">
+
+<fieldset id="cad">
+
+<legend>
+CASO NÃO TENHA LOGIN, CADASTRE-SE
+</legend>
+
+<p>
+<label>Nome</label>
+
+<input type="text"
+id="cadastroNome"
+required>
+</p>
+
+<p>
+<label>Email</label>
+
+<input type="email"
+id="cadastroEmail"
+required>
+</p>
+
+<p>
+<label>Senha</label>
+
+<input type="password"
+id="cadastroSenha"
+required>
+</p>
+
+<center>
+
+<button type="submit">
+CADASTRE-SE
+</button>
+
+<input type="reset"
+value="Limpar">
+
+</center>
+
+</fieldset>
+
+</form>
+
+<script type="module">
+
+// IMPORTAÇÕES FIREBASE
+
+import { initializeApp }
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+
+getAuth,
+createUserWithEmailAndPassword,
+signInWithEmailAndPassword
+
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+
+getFirestore,
+doc,
+setDoc
+
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// CONFIG FIREBASE
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIcSxf3fFUiNGywo-jQntvEjZ3LHNHSMg",
+  authDomain: "bd-hayslan-pweb.firebaseapp.com",
+  projectId: "bd-hayslan-pweb",
+  storageBucket: "bd-hayslan-pweb.firebasestorage.app",
+  messagingSenderId: "462773824693",
+  appId: "1:462773824693:web:a62c447d79f3bcdb8622fc",
+  measurementId: "G-KG2Q27D2RP"
+};
+
+// INICIALIZAÇÃO
+
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+
+const db = getFirestore(app);
+
+
+// CADASTRO
+
+document
+.getElementById("formCadastro")
+
+.addEventListener("submit",
+
+async (e) => {
+
+e.preventDefault();
+
+const nome =
+document.getElementById("cadastroNome").value;
+
+const email =
+document.getElementById("cadastroEmail").value;
+
+const senha =
+document.getElementById("cadastroSenha").value;
+
+try {
+
+const userCredential =
+
+await createUserWithEmailAndPassword(
+auth,
+email,
+senha
+);
+
+const user = userCredential.user;
+
+// SALVA DADOS NO FIRESTORE
+
+await setDoc(doc(db, "usuarios", user.uid), {
+
+nome: nome,
+email: email
+
+});
+
+alert("Usuário cadastrado!");
+
+} catch (error) {
+
+alert(error.message);
+
+}
+
+});
+
+// LOGIN
+
+document
+.getElementById("formLogin")
+
+.addEventListener("submit",
+
+async (e) => {
+
+e.preventDefault();
+
+const email =
+document.getElementById("loginEmail").value;
+
+const senha =
+document.getElementById("loginSenha").value;
+
+try {
+
+  await signInWithEmailAndPassword(
+    auth,
+    email,
+    senha
+);
+
+window.location.href = "site.html";
+
+} catch (error) {
+
+alert(error.message);
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
