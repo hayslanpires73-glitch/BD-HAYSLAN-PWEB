@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
@@ -35,7 +36,7 @@ required>
 </p>
 
 <center>
- 
+
 <button type="submit">
 FAZER LOGIN
 </button>
@@ -95,15 +96,28 @@ value="Limpar">
 
 </form>
 
+<!-- EXCLUIR CONTA -->
 
-<!-- EXCLUIR -->
-<form id="formExcluir">
+<form id="formExcluir" onsubmit="return false;">
+
 <fieldset id="exc">
-<legend>EXCLUIR CADASTRO</legend>
-<p><label>Email</label>
-<input type="text" id="emailExcluir" placeholder="Digite o email"><div id="listaUsuarios"></div></p>
-<center><button type="submit">EXCLUIR</button></center>
+
+<legend>
+EXCLUIR CONTA CADASTRADA (BUSCAR POR EMAIL)
+</legend>
+
+<p>
+<label>Digite parte do email: </label>
+
+<input type="text"
+id="buscaEmail"
+placeholder="ex: joao@">
+</p>
+
+<ul id="listaResultados"></ul>
+
 </fieldset>
+
 </form>
 
 <script type="module">
@@ -130,11 +144,8 @@ getFirestore,
 doc,
 setDoc,
 collection,
-query,
-where,
 getDocs,
-deleteDoc,
-onSnapshot
+deleteDoc
 
 }
 
@@ -151,6 +162,7 @@ const firebaseConfig = {
   appId: "1:462773824693:web:a62c447d79f3bcdb8622fc",
   measurementId: "G-KG2Q27D2RP"
 };
+
 
 // INICIALIZAÇÃO
 
@@ -248,48 +260,89 @@ alert(error.message);
 });
 
 
-// EXCLUIR CADASTRO (apenas Firestore)
-async function excluirPorEmail(email){
- const q=query(collection(db,"usuarios"),where("email","==",email));
- const resultado=await getDocs(q);
- if(resultado.empty){alert("Usuário não encontrado.");return;}
- if(!confirm("Deseja excluir este cadastro?")) return;
- for(const d of resultado.docs){await deleteDoc(d.ref);}
- alert("Cadastro excluído do Firestore.");
+// EXCLUIR CONTA - BUSCA POR EMAIL
+
+// OBS: aqui excluímos apenas o DOCUMENTO do usuário salvo no
+// Firestore (coleção "usuarios"). O SDK do Firebase Authentication
+// usado no navegador não permite excluir a conta de OUTRA pessoa
+// por segurança - isso só é possível com o Admin SDK em um backend
+// (ex: Cloud Functions). Se precisar disso também, avise.
+
+const inputBusca = document.getElementById("buscaEmail");
+const listaResultados = document.getElementById("listaResultados");
+
+inputBusca.addEventListener("input", async () => {
+
+const termo = inputBusca.value.trim().toLowerCase();
+
+listaResultados.innerHTML = "";
+
+if (termo === "") {
+return;
 }
 
-document.getElementById("formExcluir").addEventListener("submit",async(e)=>{
- e.preventDefault();
- await excluirPorEmail(document.getElementById("emailExcluir").value);
+try {
+
+const snapshot = await getDocs(collection(db, "usuarios"));
+
+snapshot.forEach((docSnap) => {
+
+const dados = docSnap.data();
+
+const email = (dados.email || "").toLowerCase();
+
+if (email.includes(termo)) {
+
+const item = document.createElement("li");
+
+item.textContent = `${dados.nome} - ${dados.email} `;
+
+const btnExcluir = document.createElement("button");
+
+btnExcluir.textContent = "Excluir";
+
+btnExcluir.type = "button";
+
+btnExcluir.addEventListener("click", async () => {
+
+const confirmar = confirm(
+`Tem certeza que deseja excluir os dados de ${dados.email}?`
+);
+
+if (!confirmar) {
+return;
+}
+
+try {
+
+await deleteDoc(doc(db, "usuarios", docSnap.id));
+
+alert("Dados do usuário excluídos do Firestore!");
+
+item.remove();
+
+} catch (error) {
+
+alert(error.message);
+
+}
+
 });
 
+item.appendChild(btnExcluir);
 
+listaResultados.appendChild(item);
 
-// Pesquisa em tempo real
-const campoPesquisa=document.getElementById("emailExcluir");
-const lista=document.getElementById("listaUsuarios");
-campoPesquisa.addEventListener("input",async()=>{
- const termo=campoPesquisa.value.toLowerCase();
- lista.innerHTML="";
- const usuarios=await getDocs(collection(db,"usuarios"));
- usuarios.forEach(ds=>{
-  const d=ds.data();
-  if(d.email.toLowerCase().includes(termo)){
-    const div=document.createElement("div");
-    div.style="border:1px solid #ccc;padding:10px;margin:10px 0;border-radius:8px";
-    div.innerHTML=`<strong>${d.nome}</strong><br>${d.email}<br><br>`;
-    const b=document.createElement("button");
-    b.textContent="Excluir";
-    b.onclick=async()=>{
-      if(confirm("Deseja excluir "+d.email+"?")){
-        await excluirPorEmail(d.email);
-        campoPesquisa.dispatchEvent(new Event("input"));
-      }
-    };
-    div.appendChild(b);
-    lista.appendChild(div);
-  }
- });
+}
+
+});
+
+} catch (error) {
+
+alert(error.message);
+
+}
+
 });
 
 </script>
