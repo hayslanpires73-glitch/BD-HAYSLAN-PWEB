@@ -95,6 +95,17 @@ value="Limpar">
 
 </form>
 
+
+<!-- EXCLUIR -->
+<form id="formExcluir">
+<fieldset id="exc">
+<legend>EXCLUIR CADASTRO</legend>
+<p><label>Email</label>
+<input type="text" id="emailExcluir" placeholder="Digite o email"><div id="listaUsuarios"></div></p>
+<center><button type="submit">EXCLUIR</button></center>
+</fieldset>
+</form>
+
 <script type="module">
 
 // IMPORTAÇÕES FIREBASE
@@ -117,7 +128,13 @@ import {
 
 getFirestore,
 doc,
-setDoc
+setDoc,
+collection,
+query,
+where,
+getDocs,
+deleteDoc,
+onSnapshot
 
 }
 
@@ -228,6 +245,51 @@ alert(error.message);
 
 }
 
+});
+
+
+// EXCLUIR CADASTRO (apenas Firestore)
+async function excluirPorEmail(email){
+ const q=query(collection(db,"usuarios"),where("email","==",email));
+ const resultado=await getDocs(q);
+ if(resultado.empty){alert("Usuário não encontrado.");return;}
+ if(!confirm("Deseja excluir este cadastro?")) return;
+ for(const d of resultado.docs){await deleteDoc(d.ref);}
+ alert("Cadastro excluído do Firestore.");
+}
+
+document.getElementById("formExcluir").addEventListener("submit",async(e)=>{
+ e.preventDefault();
+ await excluirPorEmail(document.getElementById("emailExcluir").value);
+});
+
+
+
+// Pesquisa em tempo real
+const campoPesquisa=document.getElementById("emailExcluir");
+const lista=document.getElementById("listaUsuarios");
+campoPesquisa.addEventListener("input",async()=>{
+ const termo=campoPesquisa.value.toLowerCase();
+ lista.innerHTML="";
+ const usuarios=await getDocs(collection(db,"usuarios"));
+ usuarios.forEach(ds=>{
+  const d=ds.data();
+  if(d.email.toLowerCase().includes(termo)){
+    const div=document.createElement("div");
+    div.style="border:1px solid #ccc;padding:10px;margin:10px 0;border-radius:8px";
+    div.innerHTML=`<strong>${d.nome}</strong><br>${d.email}<br><br>`;
+    const b=document.createElement("button");
+    b.textContent="Excluir";
+    b.onclick=async()=>{
+      if(confirm("Deseja excluir "+d.email+"?")){
+        await excluirPorEmail(d.email);
+        campoPesquisa.dispatchEvent(new Event("input"));
+      }
+    };
+    div.appendChild(b);
+    lista.appendChild(div);
+  }
+ });
 });
 
 </script>
